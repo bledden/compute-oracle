@@ -1,0 +1,4 @@
+export const POLL_INTERVAL_SIGNALS = 30_000; // 30s
+export const POLL_INTERVAL_PREDICTIONS = 60_000; // 60s
+export const POLL_INTERVAL_CAUSAL = 60_000; // 60s
+export const POLL_INTERVAL_LEARNING = 30_000; // 30s
