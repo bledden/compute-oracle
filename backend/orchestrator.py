@@ -39,6 +39,26 @@ class OracleOrchestrator:
         r = await get_redis()
         return await r.incr("oracle:cycle_count")
 
+    def _extract_target_price(
+        self, signals: list[dict[str, Any]],
+        instance: str = "p3.2xlarge", az: str = "us-east-1a",
+    ) -> float | None:
+        """Extract the current price for the target instance from fresh signals."""
+        for s in signals:
+            if instance in s.get("name", "") and az in s.get("name", ""):
+                return s["value"]
+            if s.get("instance_type") == instance and s.get("az") == az:
+                return s["value"]
+        return None
+
+    async def _get_previous_prediction_id(self) -> str | None:
+        """Get the most recent prediction ID from Redis."""
+        r = await get_redis()
+        ids = await r.zrevrange("predictions:index", 0, 0)
+        if ids:
+            return ids[0] if isinstance(ids[0], str) else ids[0].decode()
+        return None
+
     @weave.op()
     async def run_cycle(
         self,
@@ -48,22 +68,29 @@ class OracleOrchestrator:
     ) -> dict[str, Any]:
         """Run one complete prediction cycle.
 
-        In live mode: signals are fetched fresh, actual_price comes later.
+        In live mode: signals are fetched fresh, the current spot price
+        serves as ground truth for the previous prediction.
         In replay mode: signals and actual_price are provided directly.
         """
         cycle = await self._increment_cycle()
         results: dict[str, Any] = {"cycle": cycle, "timestamp": datetime.now(timezone.utc).isoformat()}
 
-        # Step 1: Get signals (if not provided)
+        # Step 1: Ingest fresh signals
         if signals is None:
+            await self.aws_source.ingest()
             signals = await get_latest_signals()
             if not signals:
-                # Fetch fresh if Redis is empty
-                await self.aws_source.ingest()
-                signals = await get_latest_signals()
+                signals = []
         results["signal_count"] = len(signals)
 
-        # Step 2: Make prediction
+        # Step 2: In live mode, use the freshly ingested current price
+        # as ground truth for the previous prediction
+        if previous_prediction_id is None and actual_price is None:
+            previous_prediction_id = await self._get_previous_prediction_id()
+            if previous_prediction_id:
+                actual_price = self._extract_target_price(signals)
+
+        # Step 3: Make prediction
         prediction = await self.predictor.predict(
             signals=signals,
             target_instance="p3.2xlarge",
@@ -73,7 +100,7 @@ class OracleOrchestrator:
         results["prediction_id"] = prediction["prediction_id"]
         results["predicted_price_1h"] = prediction["predictions"][0]["predicted_price"] if prediction["predictions"] else None
 
-        # Step 3: Evaluate previous prediction (if we have ground truth)
+        # Step 4: Evaluate previous prediction (if we have ground truth)
         if previous_prediction_id and actual_price is not None:
             evaluation = await self.evaluator.evaluate(
                 prediction_id=previous_prediction_id,
@@ -85,7 +112,7 @@ class OracleOrchestrator:
                 "direction_correct": evaluation.get("direction_correct"),
             }
 
-            # Step 4: Learn from evaluation
+            # Step 5: Learn from evaluation
             learn_result = await self.learner.learn(
                 evaluation=evaluation,
                 cycle=cycle,

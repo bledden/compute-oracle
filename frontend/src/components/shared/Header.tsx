@@ -13,25 +13,9 @@ export function Header() {
     setRunning(true);
     setLastResult(null);
     try {
-      // Get the latest prediction to provide as previous for evaluation
-      let body: Record<string, unknown> = {};
-      try {
-        const latest = await apiFetch<{ prediction_id: string; current_price: number }>("/predictions/latest");
-        if (latest.prediction_id && latest.prediction_id !== "awaiting_first_cycle") {
-          // Simulate slight price variation for demo purposes
-          const variation = (Math.random() - 0.45) * 0.06;
-          body = {
-            previous_prediction_id: latest.prediction_id,
-            actual_price: Math.round((latest.current_price + variation) * 10000) / 10000,
-          };
-        }
-      } catch {
-        // No previous prediction, run without evaluation
-      }
-
       const result = await apiFetch<{ cycle: number; prediction_id: string }>("/cycle/run", {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify({}),
       });
       setLastResult(`Cycle #${result.cycle}`);
 
