@@ -1,47 +1,34 @@
-"use client";
-import { Header } from "@/components/shared/Header";
-import { SignalPanel } from "@/components/dashboard/SignalPanel";
-import { CausalGraph } from "@/components/dashboard/CausalGraph";
-import { PredictionTimeline } from "@/components/dashboard/PredictionTimeline";
-import { AccuracyCurve } from "@/components/dashboard/AccuracyCurve";
-import { SavingsTracker } from "@/components/dashboard/SavingsTracker";
-import { LearningLog } from "@/components/dashboard/LearningLog";
-import { SchedulerView } from "@/components/dashboard/SchedulerView";
+"use client"
 
-export default function Dashboard() {
+import { DashboardHeader } from "@/components/dashboard/header"
+import { SignalPanel } from "@/components/dashboard/signal-panel"
+import { PredictionPanel } from "@/components/dashboard/prediction-panel"
+import { SavingsTracker } from "@/components/dashboard/savings-tracker"
+import { CausalGraph } from "@/components/dashboard/causal-graph"
+import { LearningCurve } from "@/components/dashboard/learning-curve"
+import { LearningLog } from "@/components/dashboard/learning-log"
+import { SchedulerPanel } from "@/components/dashboard/scheduler-panel"
+
+export default function DashboardPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 p-6">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <DashboardHeader />
+      <main className="p-6">
         <div className="grid grid-cols-12 gap-4">
-          {/* Top row: Signals + Savings */}
-          <div className="col-span-4">
-            <SignalPanel />
-          </div>
-          <div className="col-span-5">
-            <PredictionTimeline />
-          </div>
-          <div className="col-span-3">
-            <SavingsTracker />
-          </div>
+          {/* Row 1 */}
+          <SignalPanel />
+          <PredictionPanel />
+          <SavingsTracker />
 
-          {/* Middle row: Causal Graph + Accuracy */}
-          <div className="col-span-7">
-            <CausalGraph />
-          </div>
-          <div className="col-span-5">
-            <AccuracyCurve />
-          </div>
+          {/* Row 2 */}
+          <CausalGraph />
+          <LearningCurve />
 
-          {/* Bottom row: Learning Log + Scheduler */}
-          <div className="col-span-6">
-            <LearningLog />
-          </div>
-          <div className="col-span-6">
-            <SchedulerView />
-          </div>
+          {/* Row 3 */}
+          <LearningLog />
+          <SchedulerPanel />
         </div>
       </main>
     </div>
-  );
+  )
 }
