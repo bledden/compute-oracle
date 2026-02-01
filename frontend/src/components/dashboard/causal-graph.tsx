@@ -42,9 +42,9 @@ function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
         borderColor
       )}
     >
-      <Handle type="target" position={Position.Left} className="!bg-muted-foreground" />
-      <p className="text-xs font-medium text-foreground">{data.label}</p>
-      <Handle type="source" position={Position.Right} className="!bg-muted-foreground" />
+      <Handle type="target" position={Position.Left} className="bg-[#a3a3a3]!" />
+      <p className="text-xs font-medium text-[#fafafa]">{data.label}</p>
+      <Handle type="source" position={Position.Right} className="bg-[#a3a3a3]!" />
     </div>
   )
 }
@@ -163,7 +163,7 @@ export function CausalGraph() {
               <Background color="#262626" gap={16} />
               <Controls
                 showInteractive={false}
-                className="!bg-secondary !border-border [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted"
+                className="bg-secondary! border-border! [&>button]:bg-secondary! [&>button]:border-border! [&>button]:text-foreground! [&>button:hover]:bg-muted!"
               />
             </ReactFlow>
           </div>

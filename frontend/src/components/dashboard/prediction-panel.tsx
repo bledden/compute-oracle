@@ -75,7 +75,7 @@ export function PredictionPanel() {
               {prediction?.predictions.map((pred) => (
                 <div
                   key={pred.horizon}
-                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-3"
+                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3"
                 >
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="font-mono text-xs">

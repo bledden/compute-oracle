@@ -37,68 +37,56 @@ class AWSSpotSource(BaseSignalSource):
     async def fetch_history(
         self, start: datetime, end: datetime
     ) -> list[dict[str, Any]]:
-        """For historical data, we generate synthetic but realistic prices.
+        """Load real historical AWS spot prices from Zenodo dataset.
 
-        Real historical spot pricing requires AWS credentials.
-        This generates plausible data based on known patterns:
-        - Spot prices for GPU instances typically fluctuate 30-70% of on-demand
-        - Prices are lower at night (UTC 04:00-12:00) and weekends
-        - us-east-1 is typically more expensive than us-west-2
+        Source: ericpauley/aws-spot-price-history (Zenodo DOI 10.5281/zenodo.17016048)
+        Data: Real AWS EC2 spot pricing for p3.2xlarge, g4dn.xlarge, g5.xlarge
+              in us-east-1a, us-east-1b, us-west-2a — August 2025.
         """
-        import random
-        random.seed(42)  # Reproducible for demos
+        import csv
+        from pathlib import Path
+
+        data_path = Path(__file__).parent.parent / "data" / "spot_history_2025_08.csv"
+        if not data_path.exists():
+            raise FileNotFoundError(
+                f"Historical spot data not found at {data_path}. "
+                "Run the data download script first."
+            )
 
         results = []
-        # On-demand baselines (USD/hr)
-        baselines = {
-            "p3.2xlarge": 3.06,
-            "g4dn.xlarge": 0.526,
-            "g5.xlarge": 1.006,
-        }
+        with open(data_path) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ts = datetime.fromisoformat(row["timestamp"].replace("Z", "+00:00"))
+                if start <= ts < end:
+                    results.append({
+                        "source": self.source_id,
+                        "name": f"{row['instance_type']} {row['az_name']}",
+                        "instance_type": row["instance_type"],
+                        "az": row["az_name"],
+                        "value": float(row["price"]),
+                        "unit": "USD/hr",
+                        "timestamp": ts.isoformat(),
+                    })
 
-        current = start
-        while current < end:
-            hour = current.hour
-            weekday = current.weekday()
+        # Group by timestamp hour and pick nearest price per instance/az combo
+        time_buckets: dict[str, list[dict[str, Any]]] = {}
+        for item in results:
+            ts = datetime.fromisoformat(item["timestamp"])
+            bucket = ts.strftime("%Y-%m-%dT%H:00:00+00:00")
+            if bucket not in time_buckets:
+                time_buckets[bucket] = []
+            # Deduplicate: keep first price per instance+az per hour
+            key = f"{item['instance_type']}:{item['az']}"
+            if not any(f"{x['instance_type']}:{x['az']}" == key for x in time_buckets[bucket]):
+                item["timestamp"] = bucket
+                time_buckets[bucket].append(item)
 
-            for instance, base_price in baselines.items():
-                for region, azs in REGIONS.items():
-                    for az in azs:
-                        # Base spot ratio (30-70% of on-demand)
-                        ratio = 0.35 + random.gauss(0, 0.05)
-
-                        # Time-of-day effect: cheaper at night
-                        if 4 <= hour <= 12:
-                            ratio -= 0.05
-                        elif 13 <= hour <= 21:
-                            ratio += 0.05
-
-                        # Weekend discount
-                        if weekday >= 5:
-                            ratio -= 0.03
-
-                        # Region effect: us-east-1 slightly more expensive
-                        if region == "us-east-1":
-                            ratio += 0.02
-
-                        # Add noise
-                        ratio += random.gauss(0, 0.02)
-                        ratio = max(0.20, min(0.80, ratio))
-
-                        price = round(base_price * ratio, 4)
-                        results.append({
-                            "source": self.source_id,
-                            "name": f"{instance} {az}",
-                            "instance_type": instance,
-                            "az": az,
-                            "value": price,
-                            "unit": "USD/hr",
-                            "timestamp": current.isoformat(),
-                        })
-
-            # Advance by 1 hour (spot prices update roughly every 5 min,
-            # but hourly is sufficient for our causal model)
-            current += timedelta(hours=1)
+        # Flatten back and sort
+        results = []
+        for bucket_items in time_buckets.values():
+            results.extend(bucket_items)
+        results.sort(key=lambda x: x["timestamp"])
 
         return results
 

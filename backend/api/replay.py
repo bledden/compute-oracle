@@ -11,8 +11,8 @@ _engine = ReplayEngine()
 
 
 class ReplayStartRequest(BaseModel):
-    start_date: str = "2025-11-01T00:00:00"
-    end_date: str = "2025-11-04T00:00:00"
+    start_date: str = "2025-08-01T00:00:00"
+    end_date: str = "2025-08-04T00:00:00"
 
 
 class ReplayStartResponse(BaseModel):

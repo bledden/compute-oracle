@@ -43,7 +43,7 @@ export function LearningLog() {
                         ? "border-red-500/30 bg-red-500/5"
                         : isImprovement
                           ? "border-green-500/30 bg-green-500/5"
-                          : "border-border bg-secondary/30"
+                          : "border-border bg-secondary/50"
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">

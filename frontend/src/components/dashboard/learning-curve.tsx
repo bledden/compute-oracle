@@ -54,13 +54,13 @@ export function LearningCurve() {
           <>
             {/* Metric Cards */}
             <div className="mb-4 grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="rounded-lg border border-border bg-secondary/50 p-3">
                 <p className="text-xs text-muted-foreground">Mean Absolute Error</p>
                 <p className="font-mono text-xl font-bold text-foreground">
                   ${metrics?.overall_mae.toFixed(4)}
                 </p>
               </div>
-              <div className="rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="rounded-lg border border-border bg-secondary/50 p-3">
                 <p className="text-xs text-muted-foreground">Directional Accuracy</p>
                 <p className="font-mono text-xl font-bold text-foreground">
                   {((metrics?.directional_accuracy || 0) * 100).toFixed(1)}%

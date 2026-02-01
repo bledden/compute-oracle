@@ -46,7 +46,7 @@ export function SchedulerPanel() {
                 {data?.windows.map((window, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-3"
+                    className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3"
                   >
                     <div className="flex items-center gap-3">
                       <TrendingDown className="h-4 w-4 text-green-500" />
